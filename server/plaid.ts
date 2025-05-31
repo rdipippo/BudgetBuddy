@@ -36,6 +36,12 @@ export async function createLinkToken(userId: string) {
       products: ['transactions', 'auth'] as Products[],
       country_codes: ['US'] as CountryCode[],
       language: 'en',
+      // Add sandbox configuration to skip phone verification
+      ...(PLAID_ENV === 'sandbox' && {
+        android_package_name: null,
+        webhook: null,
+        link_customization_name: null,
+      }),
     };
 
     const response = await plaidClient.linkTokenCreate(request);
