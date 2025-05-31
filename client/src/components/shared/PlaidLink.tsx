@@ -7,6 +7,7 @@ interface PlaidLinkProps {
   linkToken: string | null | undefined;
   onSuccess: (publicToken: string) => void;
   onExit?: () => void;
+  onOpen?: () => void;
   isLoading?: boolean;
   className?: string;
   children?: React.ReactNode;
@@ -16,6 +17,7 @@ export function PlaidLink({
   linkToken,
   onSuccess,
   onExit,
+  onOpen,
   isLoading = false,
   className = '',
   children,
@@ -37,6 +39,9 @@ export function PlaidLink({
     token: linkToken || '',
     onSuccess: onPlaidSuccess,
     onExit: handleExit,
+    onEvent: (eventName, metadata) => {
+      console.log('Plaid event:', eventName, metadata);
+    },
   });
 
   useEffect(() => {
@@ -47,10 +52,17 @@ export function PlaidLink({
     }
   }, [linkToken, ready, open]);
 
+  const handleClick = () => {
+    if (onOpen) {
+      onOpen(); // Close modal before opening Plaid
+    }
+    open();
+  };
+
   return (
     <Button
       disabled={!linkToken || !ready || isLoading}
-      onClick={() => open()}
+      onClick={handleClick}
       className={className}
     >
       {isLoading ? (

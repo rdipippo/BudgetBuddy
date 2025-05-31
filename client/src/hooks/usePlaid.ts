@@ -65,12 +65,18 @@ export function usePlaid() {
   // Handle Plaid success
   const handlePlaidSuccess = (publicToken: string) => {
     setIsLinking(true);
+    setIsLinkModalOpen(false); // Close modal immediately when Plaid succeeds
     exchangePublicToken.mutate(publicToken);
   };
 
   // Handle Plaid exit
   const handlePlaidExit = () => {
     setIsLinking(false);
+    setIsLinkModalOpen(false);
+  };
+
+  // Handle opening Plaid (close modal to avoid conflicts)
+  const handlePlaidOpen = () => {
     setIsLinkModalOpen(false);
   };
 
@@ -102,5 +108,6 @@ export function usePlaid() {
     isLinking,
     handlePlaidSuccess,
     handlePlaidExit,
+    handlePlaidOpen,
   };
 }

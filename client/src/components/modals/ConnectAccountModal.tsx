@@ -65,6 +65,7 @@ export function ConnectAccountModal({
               linkToken={linkToken}
               onSuccess={onPlaidSuccess}
               onExit={onPlaidExit}
+              onOpen={onClose}
               isLoading={isCreatingLinkToken}
               className="w-full py-3"
             >
