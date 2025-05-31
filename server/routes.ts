@@ -11,18 +11,7 @@ import {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication
-  setupSimpleAuth(app);
-  
-  // Temporary auto-login for development
-  app.get('/api/auto-login', (req, res) => {
-    (req.session as any).user = {
-      id: "41176639",
-      email: "rjdipippo@gmail.com", 
-      firstName: "Rich",
-      lastName: "DiPippo"
-    };
-    res.redirect('/');
-  });
+  await setupAuth(app);
 
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {

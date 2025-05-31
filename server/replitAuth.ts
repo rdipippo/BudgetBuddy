@@ -148,7 +148,10 @@ export async function setupAuth(app: Express) {
         return res.redirect('/api/login');
       }
       console.log('Authentication callback successful, user:', req.user);
-      res.redirect('/');
+      // Force session save before redirect
+      req.session.save(() => {
+        res.redirect('/');
+      });
     });
   });
 
