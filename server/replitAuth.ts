@@ -115,8 +115,14 @@ export async function setupAuth(app: Express) {
     passport.use(strategy);
   }
 
-  passport.serializeUser((user: Express.User, cb) => cb(null, user));
-  passport.deserializeUser((user: Express.User, cb) => cb(null, user));
+  passport.serializeUser((user: Express.User, cb) => {
+    console.log('Serializing user:', user);
+    cb(null, user);
+  });
+  passport.deserializeUser((user: Express.User, cb) => {
+    console.log('Deserializing user:', user);
+    cb(null, user);
+  });
 
   app.get("/api/login", (req, res, next) => {
     const strategyName = `replitauth:${req.hostname}`;
@@ -136,12 +142,13 @@ export async function setupAuth(app: Express) {
       successReturnToOrRedirect: "/",
       failureRedirect: "/api/login",
       failureFlash: false
-    })(req, res, (err) => {
+    })(req, res, (err: any) => {
       if (err) {
         console.error('Authentication callback error:', err);
         return res.redirect('/api/login');
       }
-      next();
+      console.log('Authentication callback successful, user:', req.user);
+      res.redirect('/');
     });
   });
 
