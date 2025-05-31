@@ -11,16 +11,34 @@ import {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication
-  await setupAuth(app);
+  setupSimpleAuth(app);
+  
+  // Temporary auto-login for development
+  app.get('/api/auto-login', (req, res) => {
+    (req.session as any).user = {
+      id: "41176639",
+      email: "rjdipippo@gmail.com", 
+      firstName: "Rich",
+      lastName: "DiPippo"
+    };
+    res.redirect('/');
+  });
 
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      console.log('Auth user request - req.user:', req.user);
-      console.log('Auth user request - req.isAuthenticated():', req.isAuthenticated());
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      console.log('User fetched from database:', user);
+      if (!user) {
+        // Create user if it doesn't exist
+        const newUser = await storage.upsertUser({
+          id: userId,
+          email: "rjdipippo@gmail.com",
+          firstName: "Rich",
+          lastName: "DiPippo"
+        });
+        return res.json(newUser);
+      }
       res.json(user);
     } catch (error) {
       console.error("Error fetching user:", error);
