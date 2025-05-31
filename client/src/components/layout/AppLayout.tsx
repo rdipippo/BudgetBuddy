@@ -1,8 +1,9 @@
 import React, { useState } from "react";
+import { useLocation } from "wouter";
 import { Sidebar } from "@/components/ui/sidebar";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { useMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { Menu, Bell } from "lucide-react";
 
@@ -21,7 +22,8 @@ export function AppLayout({
 }: AppLayoutProps) {
   const { user, isLoading } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
+  const [location] = useLocation();
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
@@ -75,10 +77,10 @@ export function AppLayout({
             </Button>
             <div className="relative ml-3 md:hidden">
               <Button variant="ghost" size="icon" className="flex items-center max-w-xs rounded-full">
-                {user && user.profileImageUrl ? (
+                {user && (user as any).profileImageUrl ? (
                   <img
-                    src={user.profileImageUrl}
-                    alt={user.firstName || "User"}
+                    src={(user as any).profileImageUrl}
+                    alt={(user as any).firstName || "User"}
                     className="w-8 h-8 rounded-full"
                   />
                 ) : (
@@ -115,7 +117,7 @@ export function AppLayout({
       <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white border-t border-gray-200 flex z-10">
         <a href="/" className={cn(
           "flex-1 flex flex-col items-center py-2 text-xs font-medium",
-          location.pathname === "/" ? 
+          location === "/" ? 
             "text-primary-600 border-t-2 border-primary-500" : 
             "text-gray-500 hover:text-gray-700"
         )}>
