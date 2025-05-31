@@ -5,24 +5,44 @@ import { Link, Plus } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePlaid } from "@/hooks/usePlaid";
 import { ConnectAccountModal } from "@/components/modals/ConnectAccountModal";
+import { PlaidLink } from "@/components/shared/PlaidLink";
 import { formatCurrency } from "@/lib/formatters";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function Accounts() {
   const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
+  const [linkToken, setLinkToken] = useState<string | null>(null);
+  const [isCreatingToken, setIsCreatingToken] = useState(false);
+  
   const { 
     accounts,
     isAccountsLoading,
-    openLinkModal,
-    closeLinkModal,
-    isLinkModalOpen,
-    linkToken,
-    isCreatingLinkToken,
-    isLinking,
     handlePlaidSuccess,
     handlePlaidExit
   } = usePlaid();
+
+  // Create link token directly
+  const createLinkToken = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('POST', '/api/plaid/create-link-token', {});
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setLinkToken(data.link_token);
+      setIsCreatingToken(false);
+    },
+    onError: () => {
+      setIsCreatingToken(false);
+    }
+  });
+
+  const handleCreateToken = () => {
+    setIsCreatingToken(true);
+    createLinkToken.mutate();
+  };
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -44,10 +64,24 @@ export default function Accounts() {
       title="Your Accounts"
       subtitle="Manage your connected financial accounts"
       actions={
-        <Button onClick={openLinkModal}>
-          <Link className="h-4 w-4 mr-2" />
-          Connect Account
-        </Button>
+        <div className="space-x-2">
+          {!linkToken ? (
+            <Button onClick={handleCreateToken} disabled={isCreatingToken}>
+              <Link className="h-4 w-4 mr-2" />
+              {isCreatingToken ? 'Creating...' : 'Connect Account'}
+            </Button>
+          ) : (
+            <PlaidLink
+              linkToken={linkToken}
+              onSuccess={handlePlaidSuccess}
+              onExit={handlePlaidExit}
+              className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90"
+            >
+              <Link className="h-4 w-4 mr-2" />
+              Open Bank Connection
+            </PlaidLink>
+          )}
+        </div>
       }
     >
       {isAccountsLoading ? (
@@ -107,7 +141,7 @@ export default function Accounts() {
           ))}
 
           {/* Add new account card */}
-          <Card className="border-dashed border-2 bg-gray-50 hover:bg-gray-100 cursor-pointer" onClick={openLinkModal}>
+          <Card className="border-dashed border-2 bg-gray-50 hover:bg-gray-100 cursor-pointer" onClick={handleCreateToken}>
             <CardContent className="flex flex-col items-center justify-center p-6 h-full">
               <div className="h-12 w-12 rounded-full bg-primary-100 flex items-center justify-center mb-3">
                 <Plus className="h-6 w-6 text-primary-600" />
@@ -129,10 +163,22 @@ export default function Accounts() {
             <p className="text-gray-500 text-center max-w-md mb-6">
               Get started by connecting your bank accounts, credit cards, and other financial institutions to track your finances in one place.
             </p>
-            <Button onClick={openLinkModal} size="lg">
-              <Link className="h-4 w-4 mr-2" />
-              Connect Account
-            </Button>
+            {!linkToken ? (
+              <Button onClick={handleCreateToken} disabled={isCreatingToken} size="lg">
+                <Link className="h-4 w-4 mr-2" />
+                {isCreatingToken ? 'Creating...' : 'Connect Account'}
+              </Button>
+            ) : (
+              <PlaidLink
+                linkToken={linkToken}
+                onSuccess={handlePlaidSuccess}
+                onExit={handlePlaidExit}
+                className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90"
+              >
+                <Link className="h-4 w-4 mr-2" />
+                Open Bank Connection
+              </PlaidLink>
+            )}
           </CardContent>
         </Card>
       )}

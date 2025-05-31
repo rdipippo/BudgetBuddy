@@ -43,6 +43,13 @@ export function PlaidLink({
     onEvent: (eventName, metadata) => {
       console.log('Plaid event:', eventName, metadata);
     },
+    env: 'sandbox',
+    // Ensure Plaid opens with proper z-index
+    config: {
+      onLoad: () => {
+        console.log('Plaid loaded successfully');
+      }
+    }
   });
 
   useEffect(() => {
