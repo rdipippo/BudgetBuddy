@@ -29,7 +29,8 @@ export function PlaidLink({
     [onSuccess]
   );
 
-  const handleExit = useCallback(() => {
+  const handleExit = useCallback((err, metadata) => {
+    console.log('Plaid exit triggered:', err, metadata);
     if (onExit) {
       onExit();
     }
@@ -53,9 +54,7 @@ export function PlaidLink({
   }, [linkToken, ready, open]);
 
   const handleClick = () => {
-    if (onOpen) {
-      onOpen(); // Close modal before opening Plaid
-    }
+    console.log('Opening Plaid Link...');
     open();
   };
 
