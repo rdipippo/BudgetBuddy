@@ -2,9 +2,9 @@ import { Configuration, PlaidApi, PlaidEnvironments, Products, CountryCode } fro
 import { storage } from './storage';
 
 // Ensure Plaid credentials are set in environment variables
-const PLAID_CLIENT_ID = process.env.PLAID_CLIENT_ID || '';
-const PLAID_SECRET = process.env.PLAID_SECRET || '';
-const PLAID_ENV = process.env.PLAID_ENV || 'sandbox';
+const PLAID_CLIENT_ID = (process.env.PLAID_CLIENT_ID || '').trim();
+const PLAID_SECRET = (process.env.PLAID_SECRET || '').trim();
+const PLAID_ENV = (process.env.PLAID_ENV || 'sandbox').trim();
 
 // Configure Plaid
 const configuration = new Configuration({
