@@ -6,6 +6,12 @@ const PLAID_CLIENT_ID = (process.env.PLAID_CLIENT_ID || '').trim();
 const PLAID_SECRET = (process.env.PLAID_SECRET || '').trim();
 const PLAID_ENV = (process.env.PLAID_ENV || 'sandbox').trim();
 
+// Debug log the credentials (without exposing the full secret)
+console.log('Plaid Config:');
+console.log('Client ID:', PLAID_CLIENT_ID);
+console.log('Secret (first 10 chars):', PLAID_SECRET.substring(0, 10) + '...');
+console.log('Environment:', PLAID_ENV);
+
 // Configure Plaid
 const configuration = new Configuration({
   basePath: PlaidEnvironments[PLAID_ENV as keyof typeof PlaidEnvironments],
