@@ -14,19 +14,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   await setupAuth(app);
 
   // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  app.get('/api/auth/user', async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
+      // Temporary: Return your user data directly
+      const userId = "41176639";
+      let user = await storage.getUser(userId);
       if (!user) {
         // Create user if it doesn't exist
-        const newUser = await storage.upsertUser({
+        user = await storage.upsertUser({
           id: userId,
           email: "rjdipippo@gmail.com",
           firstName: "Rich",
           lastName: "DiPippo"
         });
-        return res.json(newUser);
       }
       res.json(user);
     } catch (error) {
@@ -36,9 +36,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Plaid routes
-  app.post('/api/plaid/create-link-token', isAuthenticated, async (req: any, res) => {
+  app.post('/api/plaid/create-link-token', async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = "41176639";
       const linkToken = await createLinkToken(userId);
       res.json(linkToken);
     } catch (error) {
@@ -47,9 +47,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/plaid/exchange-token', isAuthenticated, async (req: any, res) => {
+  app.post('/api/plaid/exchange-token', async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = "41176639";
       const { public_token } = req.body;
 
       if (!public_token) {
@@ -82,9 +82,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Dashboard routes
-  app.get('/api/dashboard', isAuthenticated, async (req: any, res) => {
+  app.get('/api/dashboard', async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = "41176639";
       const dashboardData = await getDashboardData(userId);
       res.json(dashboardData);
     } catch (error) {
@@ -94,9 +94,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Account routes
-  app.get('/api/accounts', isAuthenticated, async (req: any, res) => {
+  app.get('/api/accounts', async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = "41176639";
       const accounts = await storage.getAccountsByUserId(userId);
       
       // Format accounts for frontend
@@ -120,9 +120,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Transaction routes
-  app.get('/api/transactions', isAuthenticated, async (req: any, res) => {
+  app.get('/api/transactions', async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = "41176639";
       const { startDate, endDate } = req.query;
       
       let transactions;
@@ -176,9 +176,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Budget routes
-  app.get('/api/budgets', isAuthenticated, async (req: any, res) => {
+  app.get('/api/budgets', async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = "41176639";
       const budgets = await storage.getBudgetsByUserId(userId);
       
       // Get transactions to calculate spent amount for each budget
@@ -218,9 +218,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/budgets', isAuthenticated, async (req: any, res) => {
+  app.post('/api/budgets', async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = "41176639";
       const { name, amount, category } = req.body;
       
       if (!name || !amount) {
