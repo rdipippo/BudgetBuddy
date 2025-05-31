@@ -14,10 +14,18 @@ if (!process.env.REPLIT_DOMAINS) {
 
 const getOidcConfig = memoize(
   async () => {
-    return await client.discovery(
-      new URL("https://replit.com/oidc"),
-      process.env.REPL_ID!
-    );
+    try {
+      console.log('Discovering OIDC config with REPL_ID:', process.env.REPL_ID);
+      const config = await client.discovery(
+        new URL("https://replit.com/oidc"),
+        process.env.REPL_ID!
+      );
+      console.log('OIDC discovery successful');
+      return config;
+    } catch (error) {
+      console.error('OIDC discovery failed:', error);
+      throw error;
+    }
   },
   { maxAge: 3600 * 1000 }
 );
@@ -78,10 +86,17 @@ export async function setupAuth(app: Express) {
     tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
     verified: passport.AuthenticateCallback
   ) => {
-    const user = {};
-    updateUserSession(user, tokens);
-    await upsertUser(tokens.claims());
-    verified(null, user);
+    try {
+      console.log('OAuth verification successful, processing user...');
+      const user = {};
+      updateUserSession(user, tokens);
+      await upsertUser(tokens.claims());
+      console.log('User upserted successfully');
+      verified(null, user);
+    } catch (error) {
+      console.error('Error in OAuth verification:', error);
+      verified(error, null);
+    }
   };
 
   for (const domain of process.env
@@ -106,7 +121,7 @@ export async function setupAuth(app: Express) {
   app.get("/api/login", (req, res, next) => {
     const strategyName = `replitauth:${req.hostname}`;
     console.log(`Login attempt with strategy: ${strategyName}`);
-    console.log(`Available strategies: ${Object.keys(passport._strategies || {}).join(', ')}`);
+    console.log(`Available strategies: ${Object.keys((passport as any)._strategies || {}).join(', ')}`);
     passport.authenticate(strategyName, {
       prompt: "login consent",
       scope: ["openid", "email", "profile", "offline_access"],
@@ -114,10 +129,20 @@ export async function setupAuth(app: Express) {
   });
 
   app.get("/api/callback", (req, res, next) => {
-    passport.authenticate(`replitauth:${req.hostname}`, {
+    const strategyName = `replitauth:${req.hostname}`;
+    console.log(`Callback attempt with strategy: ${strategyName}`);
+    console.log(`Callback query params:`, req.query);
+    passport.authenticate(strategyName, {
       successReturnToOrRedirect: "/",
       failureRedirect: "/api/login",
-    })(req, res, next);
+      failureFlash: false
+    })(req, res, (err) => {
+      if (err) {
+        console.error('Authentication callback error:', err);
+        return res.redirect('/api/login');
+      }
+      next();
+    });
   });
 
   app.get("/api/logout", (req, res) => {
