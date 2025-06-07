@@ -69,30 +69,42 @@ export async function exchangePublicToken(userId: string, publicToken: string) {
 
     const accounts = accountsResponse.data.accounts;
 
-    // Save item and accounts in database
-    const item = await storage.createPlaidItem({
-      userId,
-      itemId,
-      accessToken,
-      status: 'active',
-    });
-
-    // Save each account
-    for (const account of accounts) {
-      await storage.createAccount({
+    // Check if item already exists
+    const existingItem = await storage.getPlaidItemByItemId(itemId);
+    
+    let item;
+    if (existingItem) {
+      item = existingItem;
+    } else {
+      // Save item and accounts in database
+      item = await storage.createPlaidItem({
         userId,
-        itemId: item.id,
-        accountId: account.account_id,
-        name: account.name,
-        officialName: account.official_name || account.name,
-        type: account.type,
-        subtype: account.subtype || null,
-        mask: account.mask || null,
-        balanceAvailable: account.balances.available || 0,
-        balanceCurrent: account.balances.current || 0,
-        balanceLimit: account.balances.limit || null,
-        balanceIsoCurrencyCode: account.balances.iso_currency_code || 'USD',
+        itemId,
+        accessToken,
+        status: 'active',
       });
+    }
+
+    // Save each account (check for duplicates first)
+    for (const account of accounts) {
+      const existingAccount = await storage.getAccountByAccountId(account.account_id);
+      
+      if (!existingAccount) {
+        await storage.createAccount({
+          userId,
+          itemId: item.id,
+          accountId: account.account_id,
+          name: account.name,
+          officialName: account.official_name || account.name,
+          type: account.type,
+          subtype: account.subtype || null,
+          mask: account.mask || null,
+          balanceAvailable: account.balances.available || 0,
+          balanceCurrent: account.balances.current || 0,
+          balanceLimit: account.balances.limit || null,
+          balanceIsoCurrencyCode: account.balances.iso_currency_code || 'USD',
+        });
+      }
     }
 
     // Sync transactions for accounts
