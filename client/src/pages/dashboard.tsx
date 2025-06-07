@@ -5,29 +5,84 @@ import { BudgetProgress } from "@/components/dashboard/BudgetProgress";
 import { MonthlyOverview } from "@/components/dashboard/MonthlyOverview";
 import { SpendingByCategory } from "@/components/dashboard/SpendingByCategory";
 import { RecentTransactions } from "@/components/dashboard/RecentTransactions";
-import { ConnectAccountModal } from "@/components/modals/ConnectAccountModal";
-import { usePlaid } from "@/hooks/usePlaid";
+import { PlaidLink } from "@/components/shared/PlaidLink";
 import { useAuth } from "@/hooks/useAuth";
 import { Download, Link, Wallet, ShoppingCart } from "lucide-react";
 import { calculatePercentage } from "@/lib/formatters";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
 
 export default function Dashboard() {
   const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const { toast } = useToast();
-  const { 
-    dashboardData,
-    isDashboardLoading,
-    openLinkModal,
-    closeLinkModal,
-    isLinkModalOpen,
-    linkToken,
-    isCreatingLinkToken,
-    isLinking,
-    handlePlaidSuccess,
-    handlePlaidExit
-  } = usePlaid();
+  const [linkToken, setLinkToken] = useState<string | null>(null);
+  const [isCreatingToken, setIsCreatingToken] = useState(false);
+  
+  // Get dashboard data
+  const { data: dashboardData, isLoading: isDashboardLoading } = useQuery({
+    queryKey: ['/api/dashboard'],
+    retry: false,
+  });
+
+  // Create link token
+  const createLinkToken = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('POST', '/api/plaid/create-link-token', {});
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setLinkToken(data.link_token);
+      setIsCreatingToken(false);
+    },
+    onError: () => {
+      setIsCreatingToken(false);
+      toast({
+        title: "Connection failed",
+        description: "Failed to create bank connection",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Exchange public token
+  const exchangePublicToken = useMutation({
+    mutationFn: async (publicToken: string) => {
+      const response = await apiRequest('POST', '/api/plaid/exchange-token', { public_token: publicToken });
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Account connected",
+        description: "Your financial accounts have been successfully connected.",
+      });
+      // Refresh dashboard data
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard'] });
+      setLinkToken(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Connection failed",
+        description: error instanceof Error ? error.message : "Failed to connect account",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handleCreateToken = () => {
+    setIsCreatingToken(true);
+    createLinkToken.mutate();
+  };
+
+  const handlePlaidSuccess = (publicToken: string) => {
+    exchangePublicToken.mutate(publicToken);
+  };
+
+  const handlePlaidExit = () => {
+    setLinkToken(null);
+  };
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -91,13 +146,26 @@ export default function Dashboard() {
       subtitle="Get an overview of your financial health"
       actions={
         <>
-          <Button 
-            variant="default"
-            onClick={openLinkModal}
-          >
-            <Link className="h-4 w-4 mr-2" />
-            Connect Account
-          </Button>
+          {!linkToken ? (
+            <Button 
+              variant="default"
+              onClick={handleCreateToken}
+              disabled={isCreatingToken}
+            >
+              <Link className="h-4 w-4 mr-2" />
+              {isCreatingToken ? 'Creating...' : 'Connect Account'}
+            </Button>
+          ) : (
+            <PlaidLink
+              linkToken={linkToken}
+              onSuccess={handlePlaidSuccess}
+              onExit={handlePlaidExit}
+              className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90"
+            >
+              <Link className="h-4 w-4 mr-2" />
+              Open Bank Connection
+            </PlaidLink>
+          )}
           <Button variant="outline">
             <Download className="h-4 w-4 mr-2" />
             Export
@@ -170,15 +238,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <ConnectAccountModal
-        isOpen={isLinkModalOpen}
-        onClose={closeLinkModal}
-        linkToken={linkToken}
-        onPlaidSuccess={handlePlaidSuccess}
-        onPlaidExit={handlePlaidExit}
-        isCreatingLinkToken={isCreatingLinkToken}
-        isLinking={isLinking}
-      />
     </AppLayout>
   );
 }
