@@ -345,6 +345,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Category routes
+  app.get('/api/categories', async (req: any, res) => {
+    try {
+      let userId;
+      if (req.isAuthenticated() && req.user) {
+        userId = req.user.claims.sub;
+      } else {
+        userId = "41176639";
+      }
+      
+      const categories = await storage.getCategoriesByUserId(userId);
+      res.json(categories);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+      res.status(500).json({ message: "Failed to fetch categories" });
+    }
+  });
+
+  app.post('/api/categories', async (req: any, res) => {
+    try {
+      let userId;
+      if (req.isAuthenticated() && req.user) {
+        userId = req.user.claims.sub;
+      } else {
+        userId = "41176639";
+      }
+      
+      const { name, color } = req.body;
+      
+      if (!name) {
+        return res.status(400).json({ message: "Category name is required" });
+      }
+      
+      const category = await storage.createCategory({
+        userId,
+        name,
+        color: color || "#3B82F6",
+        isDefault: false
+      });
+      
+      res.json(category);
+    } catch (error) {
+      console.error("Error creating category:", error);
+      res.status(500).json({ message: "Failed to create category" });
+    }
+  });
+
+  app.put('/api/categories/:id', async (req: any, res) => {
+    try {
+      const categoryId = parseInt(req.params.id);
+      const { name, color } = req.body;
+      
+      const category = await storage.updateCategory(categoryId, {
+        name,
+        color
+      });
+      
+      res.json(category);
+    } catch (error) {
+      console.error("Error updating category:", error);
+      res.status(500).json({ message: "Failed to update category" });
+    }
+  });
+
+  app.delete('/api/categories/:id', async (req: any, res) => {
+    try {
+      const categoryId = parseInt(req.params.id);
+      await storage.deleteCategory(categoryId);
+      res.json({ message: "Category deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting category:", error);
+      res.status(500).json({ message: "Failed to delete category" });
+    }
+  });
+
+  // Transaction category update route
+  app.put('/api/transactions/:id/category', async (req: any, res) => {
+    try {
+      const transactionId = parseInt(req.params.id);
+      const { category } = req.body;
+      
+      if (!category) {
+        return res.status(400).json({ message: "Category is required" });
+      }
+      
+      const transaction = await storage.updateTransactionCategory(transactionId, category);
+      res.json(transaction);
+    } catch (error) {
+      console.error("Error updating transaction category:", error);
+      res.status(500).json({ message: "Failed to update transaction category" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

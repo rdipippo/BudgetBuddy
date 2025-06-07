@@ -13,10 +13,12 @@ import {
   getCategoryColor
 } from "@/lib/formatters";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Filter, ArrowDown, ArrowUp } from 'lucide-react';
+import { Search, Filter, ArrowDown, ArrowUp, Edit3, Settings } from 'lucide-react';
 import { groupTransactionsByMonth, sortTransactionsByDate } from "@/lib/utils";
 import { useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
+import { EditCategoryModal } from "@/components/modals/EditCategoryModal";
+import { CategoryManagerModal } from "@/components/modals/CategoryManagerModal";
 
 export default function Transactions() {
   const { isAuthenticated, isLoading: isAuthLoading } = useAuth();

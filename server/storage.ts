@@ -215,6 +215,54 @@ export class DatabaseStorage implements IStorage {
       .delete(budgets)
       .where(eq(budgets.id, id));
   }
+
+  // Category operations
+  async createCategory(category: InsertCategory): Promise<Category> {
+    const [newCategory] = await db
+      .insert(categories)
+      .values(category)
+      .returning();
+    return newCategory;
+  }
+
+  async getCategoriesByUserId(userId: string): Promise<Category[]> {
+    return await db
+      .select()
+      .from(categories)
+      .where(eq(categories.userId, userId))
+      .orderBy(categories.name);
+  }
+
+  async updateCategory(id: number, categoryData: Partial<InsertCategory>): Promise<Category> {
+    const [updatedCategory] = await db
+      .update(categories)
+      .set({
+        ...categoryData,
+        updatedAt: new Date(),
+      })
+      .where(eq(categories.id, id))
+      .returning();
+    return updatedCategory;
+  }
+
+  async deleteCategory(id: number): Promise<void> {
+    await db
+      .delete(categories)
+      .where(eq(categories.id, id));
+  }
+
+  // Transaction category updates
+  async updateTransactionCategory(id: number, category: string): Promise<Transaction> {
+    const [updatedTransaction] = await db
+      .update(transactions)
+      .set({
+        category,
+        updatedAt: new Date(),
+      })
+      .where(eq(transactions.id, id))
+      .returning();
+    return updatedTransaction;
+  }
 }
 
 export const storage = new DatabaseStorage();
