@@ -31,15 +31,17 @@ export function CategoryManagerModal({ isOpen, onClose }: CategoryManagerModalPr
 
   const { data: categories = [], isLoading } = useQuery({
     queryKey: ["/api/categories"],
-  });
+  }) as { data: Category[], isLoading: boolean };
 
   const createCategoryMutation = useMutation({
     mutationFn: async ({ name, color }: { name: string; color: string }) => {
-      await apiRequest("/api/categories", {
+      const response = await fetch("/api/categories", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, color }),
       });
+      if (!response.ok) throw new Error('Failed to create category');
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
@@ -62,11 +64,13 @@ export function CategoryManagerModal({ isOpen, onClose }: CategoryManagerModalPr
 
   const updateCategoryMutation = useMutation({
     mutationFn: async ({ id, name, color }: { id: number; name: string; color: string }) => {
-      await apiRequest(`/api/categories/${id}`, {
+      const response = await fetch(`/api/categories/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, color }),
       });
+      if (!response.ok) throw new Error('Failed to update category');
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
@@ -87,9 +91,11 @@ export function CategoryManagerModal({ isOpen, onClose }: CategoryManagerModalPr
 
   const deleteCategoryMutation = useMutation({
     mutationFn: async (id: number) => {
-      await apiRequest(`/api/categories/${id}`, {
+      const response = await fetch(`/api/categories/${id}`, {
         method: "DELETE",
       });
+      if (!response.ok) throw new Error('Failed to delete category');
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
@@ -226,7 +232,7 @@ export function CategoryManagerModal({ isOpen, onClose }: CategoryManagerModalPr
               </div>
             ) : (
               <div className="space-y-2">
-                {categories.map((category: Category) => (
+                {(categories as Category[]).map((category: Category) => (
                   <div
                     key={category.id}
                     className="flex items-center justify-between p-3 border rounded-lg"

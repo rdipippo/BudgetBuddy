@@ -40,11 +40,13 @@ export function EditCategoryModal({ isOpen, onClose, transaction, categories }: 
 
   const updateTransactionMutation = useMutation({
     mutationFn: async ({ transactionId, category }: { transactionId: number; category: string }) => {
-      await apiRequest(`/api/transactions/${transactionId}/category`, {
+      const response = await fetch(`/api/transactions/${transactionId}/category`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ category }),
       });
+      if (!response.ok) throw new Error('Failed to update transaction category');
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
@@ -66,12 +68,13 @@ export function EditCategoryModal({ isOpen, onClose, transaction, categories }: 
 
   const createCategoryMutation = useMutation({
     mutationFn: async ({ name, color }: { name: string; color: string }) => {
-      const response = await apiRequest("/api/categories", {
+      const response = await fetch("/api/categories", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, color }),
       });
-      return response;
+      if (!response.ok) throw new Error('Failed to create category');
+      return response.json();
     },
     onSuccess: (newCategory) => {
       queryClient.invalidateQueries({ queryKey: ["/api/categories"] });

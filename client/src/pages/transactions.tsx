@@ -26,10 +26,17 @@ export default function Transactions() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("30days");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const [editingTransaction, setEditingTransaction] = useState<any>(null);
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
 
   // Fetch transactions
   const { data: transactions, isLoading } = useQuery({
     queryKey: ['/api/transactions', dateFilter, categoryFilter],
+  });
+
+  // Fetch categories for editing
+  const { data: managedCategories = [] } = useQuery({
+    queryKey: ['/api/categories'],
   });
 
   // Redirect to login if not authenticated
@@ -69,7 +76,7 @@ export default function Transactions() {
   );
 
   // Get unique categories for filter
-  const categories = transactions ? [...new Set(
+  const transactionCategories = transactions ? [...new Set(
     transactions
       .filter((t: any) => t.category)
       .map((t: any) => t.category.split(',')[0].trim())
