@@ -3,28 +3,28 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link, Plus } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { usePlaid } from "@/hooks/usePlaid";
-import { ConnectAccountModal } from "@/components/modals/ConnectAccountModal";
 import { PlaidLink } from "@/components/shared/PlaidLink";
 import { formatCurrency } from "@/lib/formatters";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Accounts() {
   const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
+  const { toast } = useToast();
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const [isCreatingToken, setIsCreatingToken] = useState(false);
   
-  const { 
-    accounts,
-    isAccountsLoading,
-    handlePlaidSuccess,
-    handlePlaidExit
-  } = usePlaid();
+  // Get accounts data
+  const { data: accounts, isLoading: isAccountsLoading } = useQuery({
+    queryKey: ['/api/accounts'],
+    retry: false,
+  });
 
-  // Create link token directly
+  // Create link token
   const createLinkToken = useMutation({
     mutationFn: async () => {
       const response = await apiRequest('POST', '/api/plaid/create-link-token', {});
@@ -36,12 +36,49 @@ export default function Accounts() {
     },
     onError: () => {
       setIsCreatingToken(false);
+      toast({
+        title: "Connection failed",
+        description: "Failed to create bank connection",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Exchange public token
+  const exchangePublicToken = useMutation({
+    mutationFn: async (publicToken: string) => {
+      const response = await apiRequest('POST', '/api/plaid/exchange-token', { public_token: publicToken });
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Account connected",
+        description: "Your financial accounts have been successfully connected.",
+      });
+      // Refresh accounts data
+      queryClient.invalidateQueries({ queryKey: ['/api/accounts'] });
+      setLinkToken(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Connection failed",
+        description: error instanceof Error ? error.message : "Failed to connect account",
+        variant: "destructive",
+      });
     }
   });
 
   const handleCreateToken = () => {
     setIsCreatingToken(true);
     createLinkToken.mutate();
+  };
+
+  const handlePlaidSuccess = (publicToken: string) => {
+    exchangePublicToken.mutate(publicToken);
+  };
+
+  const handlePlaidExit = () => {
+    setLinkToken(null);
   };
 
   // Redirect to login if not authenticated
@@ -107,9 +144,9 @@ export default function Accounts() {
             </Card>
           ))}
         </div>
-      ) : accounts?.length ? (
+      ) : accounts && Array.isArray(accounts) && accounts.length > 0 ? (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {accounts.map((account) => (
+          {accounts.map((account: any) => (
             <Card key={account.id}>
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg">{account.name}</CardTitle>
@@ -183,15 +220,6 @@ export default function Accounts() {
         </Card>
       )}
 
-      <ConnectAccountModal
-        isOpen={isLinkModalOpen}
-        onClose={closeLinkModal}
-        linkToken={linkToken}
-        onPlaidSuccess={handlePlaidSuccess}
-        onPlaidExit={handlePlaidExit}
-        isCreatingLinkToken={isCreatingLinkToken}
-        isLinking={isLinking}
-      />
     </AppLayout>
   );
 }
