@@ -14,6 +14,9 @@ import {
   budgets,
   type Budget,
   type InsertBudget,
+  categories,
+  type Category,
+  type InsertCategory,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, gte, lte, desc } from "drizzle-orm";
@@ -45,6 +48,15 @@ export interface IStorage {
   getBudgetsByUserId(userId: string): Promise<Budget[]>;
   updateBudget(id: number, budget: Partial<InsertBudget>): Promise<Budget>;
   deleteBudget(id: number): Promise<void>;
+  
+  // Category operations
+  createCategory(category: InsertCategory): Promise<Category>;
+  getCategoriesByUserId(userId: string): Promise<Category[]>;
+  updateCategory(id: number, category: Partial<InsertCategory>): Promise<Category>;
+  deleteCategory(id: number): Promise<void>;
+  
+  // Transaction category updates
+  updateTransactionCategory(id: number, category: string): Promise<Transaction>;
 }
 
 export class DatabaseStorage implements IStorage {

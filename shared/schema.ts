@@ -84,6 +84,17 @@ export const transactions = pgTable("transactions", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Categories for transactions and budgets
+export const categories = pgTable("categories", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  name: varchar("name").notNull(),
+  color: varchar("color").notNull().default("#3B82F6"), // Default blue color
+  isDefault: boolean("is_default").default(false), // System default categories
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Budgets
 export const budgets = pgTable("budgets", {
   id: serial("id").primaryKey(),
@@ -111,6 +122,9 @@ export type Transaction = typeof transactions.$inferSelect;
 export type InsertBudget = typeof budgets.$inferInsert;
 export type Budget = typeof budgets.$inferSelect;
 
+export type InsertCategory = typeof categories.$inferInsert;
+export type Category = typeof categories.$inferSelect;
+
 // Insert schemas
 export const upsertUserSchema = createInsertSchema(users).omit({
   createdAt: true,
@@ -136,6 +150,12 @@ export const insertTransactionSchema = createInsertSchema(transactions).omit({
 });
 
 export const insertBudgetSchema = createInsertSchema(budgets).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertCategorySchema = createInsertSchema(categories).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
