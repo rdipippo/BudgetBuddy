@@ -55,7 +55,7 @@ export default function Transactions() {
   }
 
   // Filter and sort transactions
-  const filteredTransactions = transactions ? transactions.filter((t: any) => {
+  const filteredTransactions = (transactions as any[])?.filter((t: any) => {
     // Search filter
     const nameMatch = t.name.toLowerCase().includes(searchTerm.toLowerCase());
     const categoryMatch = !searchTerm || (t.category && t.category.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -65,7 +65,7 @@ export default function Transactions() {
       (t.category && t.category.toLowerCase().includes(categoryFilter.toLowerCase()));
     
     return (nameMatch || categoryMatch) && passesCategoryFilter;
-  }) : [];
+  }) || [];
 
   // Sort transactions
   const sortedTransactions = sortTransactionsByDate(filteredTransactions || []);
@@ -76,16 +76,25 @@ export default function Transactions() {
   );
 
   // Get unique categories for filter
-  const transactionCategories = transactions ? [...new Set(
-    transactions
+  const transactionCategories = (transactions as any[])?.length ? Array.from(new Set(
+    (transactions as any[])
       .filter((t: any) => t.category)
       .map((t: any) => t.category.split(',')[0].trim())
-  )].sort() : [];
+  )).sort() : [];
 
   return (
     <AppLayout
       title="Transactions"
       subtitle="View and manage your transaction history"
+      actions={
+        <Button
+          variant="outline"
+          onClick={() => setShowCategoryManager(true)}
+        >
+          <Settings className="w-4 h-4 mr-2" />
+          Manage Categories
+        </Button>
+      }
     >
       <Card className="mb-6">
         <CardContent className="p-4 sm:p-6">
@@ -108,7 +117,7 @@ export default function Transactions() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Categories</SelectItem>
-                  {categories.map((category) => (
+                  {transactionCategories.map((category: string) => (
                     <SelectItem key={category} value={category.toLowerCase()}>
                       {category}
                     </SelectItem>
@@ -179,6 +188,7 @@ export default function Transactions() {
                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account</th>
                             <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                            <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
