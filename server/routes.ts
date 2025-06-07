@@ -16,18 +16,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
   app.get('/api/auth/user', async (req: any, res) => {
     try {
-      // Temporary: Return your user data directly
-      const userId = "41176639";
-      let user = await storage.getUser(userId);
-      if (!user) {
-        // Create user if it doesn't exist
-        user = await storage.upsertUser({
-          id: userId,
-          email: "rjdipippo@gmail.com",
-          firstName: "Rich",
-          lastName: "DiPippo"
-        });
+      if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
       }
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
       res.json(user);
     } catch (error) {
       console.error("Error fetching user:", error);
@@ -38,7 +31,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Plaid routes
   app.post('/api/plaid/create-link-token', async (req: any, res) => {
     try {
-      const userId = "41176639";
+      if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const userId = req.user.claims.sub;
       const linkToken = await createLinkToken(userId);
       res.json(linkToken);
     } catch (error) {
@@ -49,7 +45,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/plaid/exchange-token', async (req: any, res) => {
     try {
-      const userId = "41176639";
+      if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const userId = req.user.claims.sub;
       const { public_token } = req.body;
 
       if (!public_token) {
@@ -64,8 +63,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/plaid/sync', isAuthenticated, async (req: any, res) => {
+  app.post('/api/plaid/sync', async (req: any, res) => {
     try {
+      if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
       const userId = req.user.claims.sub;
       const { access_token } = req.body;
 
@@ -84,7 +86,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Dashboard routes
   app.get('/api/dashboard', async (req: any, res) => {
     try {
-      const userId = "41176639";
+      if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const userId = req.user.claims.sub;
       const dashboardData = await getDashboardData(userId);
       res.json(dashboardData);
     } catch (error) {
@@ -96,7 +101,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Account routes
   app.get('/api/accounts', async (req: any, res) => {
     try {
-      const userId = "41176639";
+      if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const userId = req.user.claims.sub;
       const accounts = await storage.getAccountsByUserId(userId);
       
       // Format accounts for frontend
